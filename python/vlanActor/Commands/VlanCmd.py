@@ -60,7 +60,7 @@ class VlanCmd(object):
             if 'interval' in cmd.cmd.keywords:
                 interval = int(cmd.cmd.keywords['interval'].values[0])
                 if interval < 0 or 255 < interval:
-                    cmd.fail('text="VlanCmd.control: interval={}"'.format(interval))
+                    raise RuntimeError('interval={}"'.format(interval))
                 self.actor.vlan.state.set_output_interval(cmd.cmd.name, interval)
             if any(x in cmd.cmd.keywords for x in ('on', 'off')):
                 output = 'on' in cmd.cmd.keywords
@@ -68,4 +68,5 @@ class VlanCmd(object):
             cmd.inform('{}={},{},{}'.format(cmd.cmd.name, int(output), interval, int(alarm)))
         except Exception as e:
             cmd.fail('text="VlanCmd.control: {}"'.format(e))
+            return
         cmd.finish()
