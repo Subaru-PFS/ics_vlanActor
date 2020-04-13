@@ -27,7 +27,7 @@ class Vlan(object):
             [x.__class__.baseType(x) for x in key.valueList]
         ))
 
-        if all((key.name == 'fitsfile', key.isCurrent, key.isGenuine)):
+        if all((key.name == 'filepath', key.isCurrent, key.isGenuine)):
             data, header = fitsio.read(key.valueList[0], header=True)
             data = data.astype('uint16').flatten()
             exposure_time = int(1e3 * float(header['EXPTIME']))  # ms

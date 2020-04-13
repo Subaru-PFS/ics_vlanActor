@@ -45,7 +45,7 @@ class VlanActor(Actor):
 
             _models = ('agcam',)
             self.addModels(_models)
-            self.models['agcam'].keyVarDict['fitsfile'].addCallback(self.vlan.receiveStatusKeys, callNow=False)
+            self.models['agcam'].keyVarDict['filepath'].addCallback(self.vlan.receiveStatusKeys, callNow=False)
 
     # override
     def connectionLost(self, reason):
