@@ -4,7 +4,7 @@ from vlanActor.state import State
 from PfsVlan import *
 
 
-class Vlan(object):
+class Vlan:
 
     _HOST = {'vgw': '127.0.0.1', 'tws1': '127.0.0.1', 'tws2': '127.0.0.1'}
     _PROG = {'vgw': PfsVlanTargetProg.rpcVGW.value, 'tws1': PfsVlanTargetProg.rpcTWS.value, 'tws2': PfsVlanTargetProg.rpcTWS.value}

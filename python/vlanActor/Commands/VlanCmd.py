@@ -5,7 +5,7 @@ import opscore.protocols.keys as keys
 import opscore.protocols.types as types
 
 
-class VlanCmd(object):
+class VlanCmd:
 
     def __init__(self, actor):
 
