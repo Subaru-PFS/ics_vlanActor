@@ -30,11 +30,6 @@ class VlanActor(Actor):
         pass
 
     # override
-    def versionString(self, cmd):
-
-        return '1.0.0'
-
-    # override
     def connectionMade(self):
 
         if not self._everConnected:
