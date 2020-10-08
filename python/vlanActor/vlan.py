@@ -1,6 +1,5 @@
-from datetime import datetime
-import fitsio
 from vlanActor.state import State
+from vlanActor.composite import composite
 from PfsVlan import *
 
 
@@ -28,11 +27,8 @@ class Vlan:
         ))
 
         if all((key.name == 'filepath', key.isCurrent, key.isGenuine)):
-            data, header = fitsio.read(key.valueList[0], header=True)
-            data = data.astype('uint16').flatten()
-            exposure_time = int(1e3 * float(header['EXPTIME']))  # ms
-            data_type = 1  # Normal
-            timestamp = datetime.fromisoformat(header['DATE-OBS'] + 'T' + header['UT'] + '+00:00').timestamp()
+            timestamp, exposure_time, data_type, image = composite(key.valueList[0])
+            data = image.flatten()
             tv_sec = int(timestamp)
             tv_usec = int(1000000 * (timestamp % 1))
             params = PfsVlanParam(exposure_time, data_type, tv_sec, tv_usec)
