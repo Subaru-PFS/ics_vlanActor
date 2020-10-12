@@ -61,8 +61,8 @@ def composite(file):
 
                 x, y = position
                 d = size // 2
-                draw.line(image, (x - d, y), (x + d, y), 1, grayscale)
-                draw.line(image, (x, y - d), (x, y + d), 1, grayscale)
+                draw.line(image, (x - d, y), (x + d, y), grayscale)
+                draw.line(image, (x, y - d), (x, y + d), grayscale)
 
             # grayscale for crosshairs
             grayscale = 0
@@ -93,10 +93,10 @@ def composite(file):
 
         for ix in range(nx - 1):
             x = get_end(composite_image_size, nx, ix)
-            draw.line(image, (x, 0), (x, composite_image_size - 1), 1, grayscale)
+            draw.line(image, (x, 0), (x, composite_image_size - 1), grayscale)
         for iy in range(ny - 1):
             y = get_end(composite_image_size, ny, iy)
-            draw.line(image, (0, y), (composite_image_size - 1, y), 1, grayscale)
+            draw.line(image, (0, y), (composite_image_size - 1, y), grayscale)
 
     return timestamp, exposure_time, exposure_type, image
 
