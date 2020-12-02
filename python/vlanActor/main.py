@@ -2,6 +2,7 @@
 
 import argparse
 from actorcore.Actor import Actor
+from vlanActor.agcam import Agcam
 from vlanActor.vlan import Vlan
 
 
@@ -36,11 +37,12 @@ class VlanActor(Actor):
 
             self._everConnected = True
 
+            self.agcam = Agcam(actor=self, logger=self.logger)
             self.vlan = Vlan(actor=self, logger=self.logger)
 
             _models = ('agcam',)
             self.addModels(_models)
-            self.models['agcam'].keyVarDict['filepath'].addCallback(self.vlan.receiveStatusKeys, callNow=False)
+            self.models['agcam'].keyVarDict['filepath'].addCallback(self.agcam.receiveStatusKeys, callNow=False)
 
     # override
     def connectionLost(self, reason):
