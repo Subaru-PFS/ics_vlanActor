@@ -4,7 +4,7 @@ import numpy
 import draw
 
 
-def composite(file):
+def composite(file, objects=None):
 
     n_cameras = 6
     composite_image_size = 512
@@ -18,7 +18,8 @@ def composite(file):
 
         image = numpy.zeros((composite_image_size, composite_image_size), dtype=numpy.uint16)
 
-        objects = fits['objects'].read()
+        if objects is None:
+            objects = fits['objects'].read()
         n_objects = len(objects)
 
         nx = ny = int(numpy.sqrt(n_objects))
@@ -103,14 +104,23 @@ def composite(file):
 
 if __name__ == '__main__':
 
-    import sys
+    from argparse import ArgumentParser
 
-    infile = '/proc/self/fd/0'
-    outfile = 'vlan.fits'
-    if len(sys.argv) > 1:
-        infile = sys.argv[1]
-        if len(sys.argv) > 2:
-            outfile = sys.argv[2]
-    _, _, _, image = composite(infile)
-    with fitsio.FITS(outfile, 'rw', clobber=True) as fits:
+    parser = ArgumentParser()
+    parser.add_argument('--frame-id', type=int, default=None, help='frame identifier')
+    parser.add_argument('--input-file', default=None, help='')
+    parser.add_argument('--output-file', required=True, help='')
+    args, _ = parser.parse_known_args()
+
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(name='composite')
+
+    import opdb
+
+    detected_objects = opdb.query_agc_data(args.frame_id) if args.frame_id is not None else None
+
+    _, _, _, image = composite(args.input_file, detected_objects)
+    with fitsio.FITS(args.output_file, 'rw', clobber=True) as fits:
         fits.write(image, compress='rice')
