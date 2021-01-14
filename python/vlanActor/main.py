@@ -2,6 +2,7 @@
 
 import argparse
 from actorcore.Actor import Actor
+from vlanActor.ag import Ag
 from vlanActor.agcc import Agcc
 from vlanActor.vlan import Vlan
 
@@ -37,11 +38,14 @@ class VlanActor(Actor):
 
             self._everConnected = True
 
+            self.ag = Ag(actor=self, logger=self.logger)
             self.agcc = Agcc(actor=self, logger=self.logger)
             self.vlan = Vlan(actor=self, logger=self.logger)
 
-            _models = ('agcc',)
+            _models = ('ag', 'agcc',)
             self.addModels(_models)
+            for key in ('guideObjects', 'detectedObjects', 'identifiedObjects',):
+                self.models['ag'].keyVarDict[key].addCallback(self.ag.receiveStatusKeys, callNow=False)
             self.models['agcc'].keyVarDict['agc_fitsfile'].addCallback(self.agcc.receiveStatusKeys, callNow=False)
 
     # override

@@ -8,8 +8,7 @@ class Agcc:
         self.actor = actor
         self.logger = logger
 
-        #self.send_image = False
-        self.send_image = True
+        self.send_image = False
         self.image_center = (IMAGE.CENTER, ) * 6
         self.image_orientation = IMAGE.ORIENTATION.LANDSCAPE
 

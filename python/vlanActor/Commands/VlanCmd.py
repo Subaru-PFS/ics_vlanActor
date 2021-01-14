@@ -81,15 +81,15 @@ class VlanCmd:
 
         center = (float(cmd.cmd.keywords['center'].values[0]), float(cmd.cmd.keywords['center'].values[1])) if 'center' in cmd.cmd.keywords else IMAGE.CENTER
         orientation = int(cmd.cmd.keywords['orientation'].values[0]) if 'orientation' in cmd.cmd.keywords else IMAGE.ORIENTATION.LANDSCAPE
-        #self.actor.ag.send_image = False
+        self.actor.ag.send_image = False
         self.actor.agcc.image_center = (center, ) * 6
         self.actor.agcc.image_orientation = orientation
-        #self.actor.agcc.send_image = True
+        self.actor.agcc.send_image = True
         cmd.finish()
 
     def format_focused(self, cmd):
         """Set output video format to focused."""
 
-        #self.actor.agcc.send_image = False
-        #self.actor.ag.send_image = True
+        self.actor.agcc.send_image = False
+        self.actor.ag.send_image = True
         cmd.finish()
