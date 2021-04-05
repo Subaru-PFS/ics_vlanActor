@@ -48,7 +48,7 @@ def composite(file, objects=None):
 
         for obj in objects:
 
-            icam, iobj, m00, xc, yc, m11, m20, m02, x, y, pk, bg = obj
+            icam, iobj, m00, xc, yc, m11, m20, m02, x, y, pk, bg, *_ = obj
             icam -= 1
             iobj -= 1
             x, y = int(round(xc)), int(round(yc))
