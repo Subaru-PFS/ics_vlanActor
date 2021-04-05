@@ -117,7 +117,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(name='composite')
 
-    import opdb
+    from opdb import opDB as opdb
 
     detected_objects = opdb.query_agc_data(args.frame_id) if args.frame_id is not None else None
 
