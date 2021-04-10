@@ -56,13 +56,31 @@ def _line(image, start_position, end_position, color):
 def hline(image, position, length, color):
 
     if 0 <= position[1] < image.shape[0]:
-        image[position[1], position[0]:position[0] + length:(-1 if length < 0 else 1)] = color
+        x0 = position[0]
+        x1 = position[0] + length
+        if x0 > x1:
+            x0, x1 = x1, x0
+        if x0 < 0:
+            x0 = 0
+        if x1 > image.shape[1]:
+            x1 = image.shape[1]
+        if x0 < x1:
+            image[position[1], x0:x1] = color
 
 
 def vline(image, position, length, color):
 
     if 0 <= position[0] < image.shape[1]:
-        image[position[1]:position[1] + length:(-1 if length < 0 else 1), position[0]] = color
+        y0 = position[1]
+        y1 = position[1] + length
+        if y0 > y1:
+            y0, y1 = y1, y0
+        if y0 < 0:
+            y0 = 0
+        if y1 > image.shape[0]:
+            y1 = image.shape[0]
+        if y0 < y1:
+            image[y0:y1, position[0]] = color
 
 
 def crop(image, position, size):
