@@ -4,12 +4,12 @@ import numpy
 import draw
 
 
-def composite(file, objects=None):
+def composite(input_file, detected_objects=None, identified_objects=None):
 
     n_cameras = 6
     composite_image_size = 512
 
-    with fitsio.FITS(file) as fits:
+    with fitsio.FITS(input_file) as fits:
 
         header = fits['cam1'].read_header()
         timestamp = datetime.strptime(header['DATE'], '%Y%m%d%H%M%S%f').timestamp()
@@ -18,9 +18,9 @@ def composite(file, objects=None):
 
         image = numpy.zeros((composite_image_size, composite_image_size), dtype=numpy.uint16)
 
-        if objects is None:
-            objects = fits['objects'].read()
-        n_objects = len(objects)
+        if detected_objects is None:
+            detected_objects = fits['objects'].read()
+        n_objects = len(detected_objects)
 
         nx = ny = int(numpy.sqrt(n_objects))
         if nx * ny < n_objects:
@@ -28,6 +28,9 @@ def composite(file, objects=None):
             if nx * ny < n_objects:
                 ny += 1
         assert nx * ny >= n_objects
+
+        if identified_objects is None:
+            identified_objects = [(i, i, 0, 0, 0, 0, x[3], x[4]) for i, x in enumerate(detected_objects)]
 
         def get_start(n, m, i):
 
@@ -46,7 +49,7 @@ def composite(file, objects=None):
 
         ix, iy = 0, 0
 
-        for obj in objects:
+        for _iobj, obj in enumerate(detected_objects):
 
             icam, iobj, m00, xc, yc, m11, m20, m02, x, y, pk, bg, *_ = obj
             icam -= 1
@@ -58,17 +61,26 @@ def composite(file, objects=None):
             y0 = max(0, min(y - sy // 2, fits[icam + 1][:, :].shape[0] - sy))
             cropped = draw.crop(fits[icam + 1][:, :], (x0, y0), (sx, sy))
 
-            def put_crosshair(image, position, size=5, grayscale=0):
+            # check if this object has been identified or not;
+            # the first column of identified_objects is an index to detected_objects
+            i = next((i for i, v in enumerate(identified_objects) if v[0] == _iobj), None)
 
-                x, y = position
-                d = size // 2
-                draw.line(image, (x - d, y), (x + d, y), grayscale)
-                draw.line(image, (x, y - d), (x, y + d), grayscale)
+            if i is not None:
 
-            # grayscale for crosshairs
-            grayscale = 0
+                x, y = [int(round(x)) for x in identified_objects[i][6:]]
 
-            put_crosshair(cropped, (x - x0, y - y0), grayscale=grayscale)
+                def put_crosshair(image, position, size=8, grayscale=0):
+
+                    x, y = position
+                    d = size // 2
+                    draw.line(image, (x - d, y), (x + d, y), grayscale)
+                    draw.line(image, (x, y - d), (x, y + d), grayscale)
+
+                # grayscale for crosshairs
+                grayscale = 2 ** 15 - 1
+
+                # draw a crosshair where this guide object is expected to be
+                put_crosshair(cropped, (x - x0, y - y0), grayscale=grayscale)
 
             # grayscale for annotations
             grayscale = 2 ** 15 - 1
@@ -107,8 +119,10 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    parser.add_argument('--frame-id', type=int, default=None, help='frame identifier')
-    parser.add_argument('--input-file', default=None, help='')
+    parser.add_argument('--tile-id', type=int, required=True, help='tile identifier')
+    parser.add_argument('--frame-id', type=int, required=True, help='frame identifier')
+    parser.add_argument('--obswl', type=float, default=0.62, help='wavelength of observation (um)')
+    parser.add_argument('--input-file', required=True, help='')
     parser.add_argument('--output-file', required=True, help='')
     args, _ = parser.parse_known_args()
 
@@ -117,10 +131,11 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(name='composite')
 
-    from opdb import opDB as opdb
+    from field_acquisition import acquire_field
 
-    detected_objects = opdb.query_agc_data(args.frame_id) if args.frame_id is not None else None
+    _, _, _, *extra = acquire_field(args.tile_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
+    _, detected_objects, identified_objects = extra
 
-    _, _, _, image = composite(args.input_file, detected_objects)
+    _, _, _, image = composite(args.input_file, detected_objects=detected_objects, identified_objects=identified_objects)
     with fitsio.FITS(args.output_file, 'rw', clobber=True) as fits:
         fits.write(image, compress='rice')
