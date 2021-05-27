@@ -12,14 +12,17 @@ def composite(input_file, detected_objects=None, identified_objects=None):
     with fitsio.FITS(input_file) as fits:
 
         header = fits['cam1'].read_header()
-        timestamp = datetime.strptime(header['DATE'], '%Y%m%d%H%M%S%f').timestamp()
+        timestamp = datetime.strptime(header['DATE'], '%Y-%m-%dT%H:%M:%S').timestamp()
         exposure_time = header['EXPTIME']
         exposure_type = 1  # normal
 
         image = numpy.zeros((composite_image_size, composite_image_size), dtype=numpy.uint16)
 
         if detected_objects is None:
-            detected_objects = fits['objects'].read()
+            try:
+                detected_objects = fits['objects'].read()
+            except:
+                detected_objects = []
         n_objects = len(detected_objects)
 
         nx = ny = int(numpy.sqrt(n_objects))
