@@ -136,8 +136,8 @@ if __name__ == '__main__':
 
     from field_acquisition import acquire_field
 
-    _, _, _, *extra = acquire_field(args.tile_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
-    _, detected_objects, identified_objects = extra
+    _, _, _, *values = acquire_field(args.tile_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
+    _, detected_objects, identified_objects, *_ = values
 
     _, _, _, image = composite(args.input_file, detected_objects=detected_objects, identified_objects=identified_objects)
     with fitsio.FITS(args.output_file, 'rw', clobber=True) as fits:
