@@ -1,3 +1,4 @@
+import numpy
 from vlanActor.state import State
 from vlanActor.composite import composite
 from PfsVlan import *
@@ -31,7 +32,7 @@ class Vlan:
     def sendImage(self, filepath, objects=None):
 
         timestamp, exposure_time, data_type, image = composite(filepath, objects)
-        data = image.flatten()
+        data = numpy.flip(image, axis=0).flatten()
         tv_sec = int(timestamp)
         tv_usec = int(1000000 * (timestamp % 1))
         params = PfsVlanParam(exposure_time, data_type, tv_sec, tv_usec)
