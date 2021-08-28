@@ -17,6 +17,7 @@ def composite(input_file, detected_objects=None, identified_objects=None):
         exposure_type = 1  # normal
 
         image = numpy.zeros((composite_image_size, composite_image_size), dtype=numpy.uint16)
+        overlay = numpy.zeros_like(image)
 
         if detected_objects is None:
             try:
@@ -27,9 +28,9 @@ def composite(input_file, detected_objects=None, identified_objects=None):
 
         nx = ny = int(numpy.sqrt(n_objects))
         if nx * ny < n_objects:
-            nx += 1
+            ny += 1
             if nx * ny < n_objects:
-                ny += 1
+                nx += 1
         assert nx * ny >= n_objects
 
         if identified_objects is None:
@@ -52,9 +53,9 @@ def composite(input_file, detected_objects=None, identified_objects=None):
 
         ix, iy = 0, 0
 
-        for _iobj, obj in enumerate(detected_objects):
+        for _iobj, detected_object in enumerate(detected_objects):
 
-            icam, iobj, m00, xc, yc, m11, m20, m02, x, y, pk, bg, *_ = obj
+            icam, iobj, m00, xc, yc, m11, m20, m02, x, y, pk, bg, *_ = detected_object
             icam -= 1
             iobj -= 1
             x, y = int(round(xc)), int(round(yc))
@@ -64,13 +65,19 @@ def composite(input_file, detected_objects=None, identified_objects=None):
             y0 = max(0, min(y - sy // 2, fits[icam + 1][:, :].shape[0] - sy))
             cropped = draw.crop(fits[icam + 1][:, :], (x0, y0), (sx, sy))
 
+            # origin of crop in composite image/overlay pixel coordinates (u, v)
+            u = get_start(composite_image_size, nx, ix)
+            v = get_start(composite_image_size, ny, iy)
+
             # check if this object has been identified or not;
             # the first column of identified_objects is an index to detected_objects
             i = next((i for i, v in enumerate(identified_objects) if v[0] == _iobj), None)
 
             if i is not None:
 
-                x, y = [int(round(x)) for x in identified_objects[i][6:]]
+                identified_object = identified_objects[i]
+                x = int(round(identified_object[6]))
+                y = int(round(identified_object[7]))
 
                 def put_crosshair(image, position, size=8, grayscale=0):
 
@@ -79,23 +86,15 @@ def composite(input_file, detected_objects=None, identified_objects=None):
                     draw.line(image, (x - d, y), (x + d, y), grayscale)
                     draw.line(image, (x, y - d), (x, y + d), grayscale)
 
-                # grayscale for crosshairs
-                grayscale = 2 ** 15 - 1
-
-                # draw a crosshair where this guide object is expected to be
-                put_crosshair(cropped, (x - x0, y - y0), grayscale=grayscale)
-
-            # grayscale for annotations
-            grayscale = 2 ** 15 - 1
+                # draw a crosshair where this guide object is expected
+                put_crosshair(overlay, (u + (x - x0), v + (y - y0)), grayscale=1)
 
             fontsize = 8
 
-            text = 'CAM{}'.format(icam + 1)
-            draw.text(cropped, (1, cropped.shape[0] - 2), text, grayscale)
-            text = 'OBJ{}'.format(iobj + 1)
-            draw.text(cropped, (1, fontsize - 1), text, grayscale)
+            text = 'CAM{} OBJ{}'.format(icam + 1, iobj + 1)
+            draw.text(overlay, (u + 1, v + (fontsize - 1)), text, 1)
 
-            image[get_start(composite_image_size, ny, iy):get_end(composite_image_size, ny, iy), get_start(composite_image_size, nx, ix):get_end(composite_image_size, nx, ix)] = cropped[:, :]
+            image[v:v + sy, u:u + sx] = cropped[:, :]
 
             ix += 1
             if ix == nx:
@@ -104,15 +103,17 @@ def composite(input_file, detected_objects=None, identified_objects=None):
                 if iy == ny:
                     iy = 0
 
-        # grayscale for grids
-        grayscale = 2 ** 15 - 1
-
         for ix in range(nx - 1):
             x = get_end(composite_image_size, nx, ix)
-            draw.line(image, (x, 0), (x, composite_image_size - 1), grayscale)
+            draw.line(overlay, (x, 0), (x, composite_image_size - 1), 1)
         for iy in range(ny - 1):
             y = get_end(composite_image_size, ny, iy)
-            draw.line(image, (0, y), (composite_image_size - 1, y), grayscale)
+            draw.line(overlay, (0, y), (composite_image_size - 1, y), 1)
+
+        # grayscale for overlay
+        grayscale = max(numpy.amax(image), 1)
+
+        image = numpy.maximum(image, grayscale * overlay)
 
     return timestamp, exposure_time, exposure_type, image
 
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    parser.add_argument('--tile-id', type=int, required=True, help='tile identifier')
+    parser.add_argument('--design-id', type=int, required=True, help='design identifier')
     parser.add_argument('--frame-id', type=int, required=True, help='frame identifier')
     parser.add_argument('--obswl', type=float, default=0.62, help='wavelength of observation (um)')
     parser.add_argument('--input-file', required=True, help='')
@@ -136,7 +137,7 @@ if __name__ == '__main__':
 
     from field_acquisition import acquire_field
 
-    _, _, _, *values = acquire_field(args.tile_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
+    _, _, _, *values = acquire_field(args.design_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
     _, detected_objects, identified_objects, *_ = values
 
     _, _, _, image = composite(args.input_file, detected_objects=detected_objects, identified_objects=identified_objects)
