@@ -4,7 +4,16 @@ import numpy
 import draw
 
 
-def composite(input_file, detected_objects=None, identified_objects=None):
+class IMAGE:
+
+    CENTER = (511.5 + 24, 511.5 + 9)
+
+    class ORIENTATION:
+        LANDSCAPE = 0
+        PORTRAIT = 1
+
+
+def composite(input_file, orientation=IMAGE.ORIENTATION.LANDSCAPE, center=(IMAGE.CENTER, ) * 6):
 
     composite_image_size = 512
 
@@ -26,30 +35,18 @@ def composite(input_file, detected_objects=None, identified_objects=None):
 
         n_cameras = len(cameras)
 
-        if detected_objects is None:
-            try:
-                detected_objects = fits['objects'].read()
-            except:
-                detected_objects = []
-        #n_objects = len(detected_objects)
-
-        # for simulations
-        n_objects = 0
-        for detected_object in detected_objects:
-            icam, *_ = detected_object
-            # for simulations
-            if icam in cameras:
-                n_objects += 1
-
-        nx = ny = int(numpy.sqrt(n_objects))
-        if nx * ny < n_objects:
-            ny += 1
-            if nx * ny < n_objects:
+        nx = ny = int(numpy.sqrt(n_cameras))
+        if nx * ny < n_cameras:
+            if orientation:
                 nx += 1
-        assert nx * ny >= n_objects
-
-        if identified_objects is None:
-            identified_objects = [(i, i, 0, 0, 0, 0, x[3], x[4]) for i, x in enumerate(detected_objects)]
+            else:
+                ny += 1
+            if nx * ny < n_cameras:
+                if orientation:
+                    ny += 1
+                else:
+                    nx += 1
+        assert nx * ny >= n_cameras
 
         def get_start(n, m, i):
 
@@ -71,15 +68,9 @@ def composite(input_file, detected_objects=None, identified_objects=None):
 
         ix, iy = 0, 0
 
-        for _iobj, detected_object in enumerate(detected_objects):
+        for icam in cameras:
 
-            icam, iobj, m00, xc, yc, m11, m20, m02, x, y, pk, bg, *_ = detected_object
-
-            # for simulations
-            if icam not in cameras:
-                continue
-
-            x, y = int(round(xc)), int(round(yc))
+            x, y = int(round(center[icam][0])), int(round(center[icam][1]))
             sx = get_size(composite_image_size, nx, ix)
             sy = get_size(composite_image_size, ny, iy)
             x0 = max(0, min(x - sx // 2, fits[icam + 1][:, :].shape[1] - sx))
@@ -90,29 +81,9 @@ def composite(input_file, detected_objects=None, identified_objects=None):
             u = get_start(composite_image_size, nx, ix)
             v = get_start(composite_image_size, ny, iy)
 
-            # check if this object has been identified or not;
-            # the first column of identified_objects is an index to detected_objects
-            i = next((i for i, v in enumerate(identified_objects) if v[0] == _iobj), None)
-
-            if i is not None:
-
-                identified_object = identified_objects[i]
-                x = int(round(identified_object[6]))
-                y = int(round(identified_object[7]))
-
-                def put_crosshair(image, position, size=8, grayscale=0):
-
-                    x, y = position
-                    d = size // 2
-                    draw.line(image, (x - d, y), (x + d, y), grayscale)
-                    draw.line(image, (x, y - d), (x, y + d), grayscale)
-
-                # draw a crosshair where this guide object is expected
-                put_crosshair(overlay, (u + (x - x0), v + (y - y0)), grayscale=1)
-
             fontsize = 8
 
-            text = 'CAM{} OBJ{}'.format(icam + 1, iobj + 1)
+            text = 'CAM{} ({},{})'.format(icam + 1, x, y)
             draw.text(overlay, (u + 1, v + (fontsize - 1)), text, 1)
 
             image[v:v + sy, u:u + sx] = cropped[:, :]
@@ -144,9 +115,6 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    parser.add_argument('--design-id', type=int, required=True, help='design identifier')
-    parser.add_argument('--frame-id', type=int, required=True, help='frame identifier')
-    parser.add_argument('--obswl', type=float, default=0.62, help='wavelength of observation (um)')
     parser.add_argument('--input-file', required=True, help='')
     parser.add_argument('--output-file', required=True, help='')
     args, _ = parser.parse_known_args()
@@ -154,13 +122,8 @@ if __name__ == '__main__':
     import logging
 
     logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(name='composite')
+    logger = logging.getLogger(name='composite_simple')
 
-    from field_acquisition import acquire_field
-
-    _, _, _, *values = acquire_field(args.design_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
-    _, detected_objects, identified_objects, *_ = values
-
-    _, _, _, image = composite(args.input_file, detected_objects=detected_objects, identified_objects=identified_objects)
+    _, _, _, image = composite(args.input_file)
     with fitsio.FITS(args.output_file, 'rw', clobber=True) as fits:
         fits.write(image, compress='rice')

@@ -1,9 +1,17 @@
+from vlanActor.composite_simple import composite, IMAGE
+
+
 class Agcc:
 
     def __init__(self, actor=None, logger=None):
 
         self.actor = actor
         self.logger = logger
+
+        #self.send_image = False
+        self.send_image = True
+        self.image_center = (IMAGE.CENTER, ) * 6
+        self.image_orientation = IMAGE.ORIENTATION.LANDSCAPE
 
     def receiveStatusKeys(self, key):
 
@@ -17,8 +25,9 @@ class Agcc:
         ))
 
         if all((key.name == 'agc_fitsfile', key.isCurrent, key.isGenuine)):
-            filepath = str(key.valueList[0])
-            self.actor.vlan.sendImage(filepath)
+            if self.send_image:
+                filepath = str(key.valueList[0])
+                self.actor.vlan.sendImage(filepath, composite=composite, center=self.image_center, orientation=self.image_orientation)
 
     def _getValues(self, key):
 

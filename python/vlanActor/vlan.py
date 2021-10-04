@@ -29,9 +29,9 @@ class Vlan:
         for svc in ('vgw', 'tws1', 'tws2'):
             self._sendStatusKey(cmd, svc)
 
-    def sendImage(self, filepath, detected_objects=None, identified_objects=None):
+    def sendImage(self, filepath, composite=composite, **kwargs):
 
-        timestamp, exposure_time, data_type, image = composite(filepath, detected_objects, identified_objects)
+        timestamp, exposure_time, data_type, image = composite(filepath, **kwargs)
         data = numpy.flip(image, axis=0).flatten()
         tv_sec = int(timestamp)
         tv_usec = int(1000000 * (timestamp % 1))

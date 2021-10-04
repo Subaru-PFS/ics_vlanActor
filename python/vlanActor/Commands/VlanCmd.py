@@ -3,6 +3,7 @@
 from twisted.internet import reactor
 import opscore.protocols.keys as keys
 import opscore.protocols.types as types
+from vlanActor.composite_simple import IMAGE
 
 
 class VlanCmd:
@@ -17,11 +18,15 @@ class VlanCmd:
             ('vgw', '[(on|off)] [<interval>]', self.control),
             ('tws1', '[(on|off)] [<interval>]', self.control),
             ('tws2', '[(on|off)] [<interval>]', self.control),
+            ('format', '@simple [<center>] [<orientation>]', self.format_simple),
+            ('format', '@focused', self.format_focused),
         ]
         self.keys = keys.KeysDictionary(
             'vlan_vlan',
-            (1, 1),
+            (1, 2),
             keys.Key('interval', types.Int(), help=''),
+            keys.Key('center', types.Float() * 2, help=''),
+            keys.Key('orientation', types.Bool('landscape', 'portrait'), help=''),
         )
 
     def ping(self, cmd):
@@ -69,4 +74,22 @@ class VlanCmd:
         except Exception as e:
             cmd.fail('text="VlanCmd.control: {}"'.format(e))
             return
+        cmd.finish()
+
+    def format_simple(self, cmd):
+        """Set output video format to simple."""
+
+        center = (float(cmd.cmd.keywords['center'].values[0]), float(cmd.cmd.keywords['center'].values[1])) if 'center' in cmd.cmd.keywords else IMAGE.CENTER
+        orientation = int(cmd.cmd.keywords['orientation'].values[0]) if 'orientation' in cmd.cmd.keywords else IMAGE.ORIENTATION.LANDSCAPE
+        #self.actor.ag.send_image = False
+        self.actor.agcc.image_center = (center, ) * 6
+        self.actor.agcc.image_orientation = orientation
+        #self.actor.agcc.send_image = True
+        cmd.finish()
+
+    def format_focused(self, cmd):
+        """Set output video format to focused."""
+
+        #self.actor.agcc.send_image = False
+        #self.actor.ag.send_image = True
         cmd.finish()
