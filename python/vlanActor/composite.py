@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     from field_acquisition import acquire_field
 
-    _, _, _, *values = acquire_field(args.design_id, args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
+    _, _, _, _, _, _, *values = acquire_field(design=(args.design_id, None), frame_id=args.frame_id, obswl=args.obswl, verbose=True, logger=logger)
     _, detected_objects, identified_objects, *_ = values
 
     _, _, _, image = composite(args.input_file, detected_objects=detected_objects, identified_objects=identified_objects)
