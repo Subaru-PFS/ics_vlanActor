@@ -11,10 +11,6 @@ class Ag:
 
         self.send_image = True
 
-        self.guide_objects = None
-        self.detected_objects = None
-        self.identified_objects = None
-
     def receiveStatusKeys(self, key):
 
         self.logger.info('receiveStatusKeys: {},{},{},{},{},{}'.format(
@@ -26,15 +22,11 @@ class Ag:
             [x.__class__.baseType(x) for x in key.valueList]
         ))
 
-        if all((key.name == 'guideObjects', key.isCurrent, key.isGenuine)):
-            self.guide_objects = numpy.load(key.valueList[0])
-        elif all((key.name == 'detectedObjects', key.isCurrent, key.isGenuine)):
-            self.detected_objects = numpy.load(key.valueList[0])
-        elif all((key.name == 'identifiedObjects', key.isCurrent, key.isGenuine)):
-            self.identified_objects = numpy.load(key.valueList[0])
+        if all((key.name == 'data', key.isCurrent, key.isGenuine)):
             if self.send_image:
+                _, detected_objects, identified_objects = (numpy.load(str(x)) for x in key.valueList[3:])
                 filepath = self.actor.agcc.filepath
-                self.actor.vlan.sendImage(filepath, composite=composite, detected_objects=self.detected_objects, identified_objects=self.identified_objects)
+                self.actor.vlan.sendImage(filepath, composite=composite, detected_objects=detected_objects, identified_objects=identified_objects)
 
     def _getValues(self, key):
 
