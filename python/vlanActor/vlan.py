@@ -6,7 +6,7 @@ from PfsVlan import *
 
 class Vlan:
 
-    _HOST = {'vgw': '127.0.0.1', 'tws1': '127.0.0.1', 'tws2': '127.0.0.1'}
+    _HOST = {'vgw': '192.168.106.141', 'tws1': '192.168.106.153', 'tws2': '192.168.106.154'}
     _PROG = {'vgw': PfsVlanTargetProg.rpcVGW.value, 'tws1': PfsVlanTargetProg.rpcTWS.value, 'tws2': PfsVlanTargetProg.rpcTWS.value}
     
     def __init__(self, actor=None, logger=None):
